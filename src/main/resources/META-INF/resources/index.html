@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corp IT Asset & Architecture Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+</head>
+<body class="bg-gray-100 text-gray-900 font-sans h-screen flex flex-col overflow-hidden">
+
+<!-- LOGIN OVERLAY -->
+<div id="login-screen" class="fixed inset-0 bg-indigo-900 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-8 border border-gray-100">
+        <div class="text-center mb-8">
+            <h2 class="text-2xl font-black text-indigo-900">Corp IT Portal</h2>
+            <p class="text-xs text-gray-500 mt-1">Software Asset Management & Architecture Blueprint</p>
+        </div>
+        <form id="login-form" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Username</label>
+                <input type="text" id="login-user" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="architect or viewer">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Password</label>
+                <input type="password" id="login-pass" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="••••••••">
+            </div>
+            <div id="login-error" class="text-xs text-red-600 font-semibold hidden"></div>
+            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-lg text-sm transition shadow-md">Sign In</button>
+        </form>
+        <div class="mt-6 text-center border-t pt-4 text-[11px] text-gray-400">
+            Credentials: <code class="text-indigo-600 font-semibold">architect / architect123</code> | <code class="text-indigo-600 font-semibold">viewer / viewer123</code>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN APP WRAPPER -->
+<div id="app-wrapper" class="flex h-screen hidden">
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="w-64 bg-indigo-900 text-indigo-100 flex flex-col transition-all duration-300 shadow-xl z-20">
+        <div class="p-4 flex items-center justify-between border-b border-indigo-800">
+            <h1 class="font-bold text-sm tracking-wide truncate">IT Architecture Portal</h1>
+            <button id="btn-sidebar-toggle" class="text-indigo-300 hover:text-white text-xs bg-indigo-800 px-2 py-1 rounded">☰</button>
+        </div>
+
+        <div class="p-4 border-b border-indigo-800 bg-indigo-950/40 flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white text-sm" id="user-initials">AS</div>
+            <div class="overflow-hidden">
+                <p class="text-xs font-bold text-white truncate" id="sidebar-fullname">Arief Suangga</p>
+                <span class="inline-block text-[10px] bg-indigo-800 text-indigo-200 px-1.5 py-0.5 rounded font-semibold mt-0.5" id="sidebar-role-badge">IT-Architect</span>
+            </div>
+        </div>
+
+        <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+            <button id="nav-dashboard" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-semibold bg-indigo-800 text-white transition">
+                <span>📊</span><span class="nav-label">Dashboard</span>
+            </button>
+            <button id="nav-architecture" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-semibold hover:bg-indigo-800/60 text-indigo-200 transition">
+                <span>🗺️</span><span class="nav-label">Architecture Blueprint</span>
+            </button>
+            <button id="nav-assets" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-semibold hover:bg-indigo-800/60 text-indigo-200 transition">
+                <span>📦</span><span class="nav-label">Asset Management</span>
+            </button>
+        </nav>
+
+        <div class="p-3 border-t border-indigo-800">
+            <button id="btn-logout" class="w-full flex items-center justify-center space-x-2 bg-indigo-800/60 hover:bg-red-600 hover:text-white text-indigo-200 text-xs font-semibold py-2 rounded-lg transition">
+                <span>🚪</span>
+                <span class="nav-label">Sign Out</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+        <header class="bg-white border-b h-16 flex items-center justify-between px-6 shadow-sm">
+            <h2 id="current-page-title" class="text-lg font-bold text-gray-800">Dashboard</h2>
+            <div class="text-xs text-gray-500" id="current-time"></div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-6 bg-gray-50">
+
+            <!-- DASHBOARD VIEW -->
+            <section id="view-dashboard" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                        <h3 class="text-gray-400 text-xs font-bold uppercase tracking-wider">Total Managed Applications</h3>
+                        <p id="app-count" class="text-4xl font-black text-indigo-600 mt-2">--</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-base font-bold text-gray-800 mb-4">Recent Infrastructure Migrations</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                            <tr class="border-b bg-gray-50 text-gray-500 text-xs font-semibold uppercase">
+                                <th class="p-3">App Name</th>
+                                <th class="p-3">Target Version</th>
+                                <th class="p-3">Migration Date</th>
+                                <th class="p-3">Status</th>
+                            </tr>
+                            </thead>
+                            <tbody id="migration-table-body" class="text-sm divide-y divide-gray-100">
+                            <tr><td colspan="4" class="p-3 text-center text-gray-400">Loading records...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ARCHITECTURE BLUEPRINT VIEW -->
+            <section id="view-architecture" class="hidden space-y-6">
+                <div class="flex justify-between items-center flex-wrap gap-4">
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-800">Information System Architecture Blueprint</h3>
+                        <p class="text-xs text-gray-500 mt-0.5">Corporate routing rule: Core Banking must route through Middleware gateway.</p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="flex bg-gray-200 p-1 rounded-lg space-x-1">
+                            <button id="btn-mode-lanes" class="px-3 py-1.5 rounded-md text-xs font-bold bg-indigo-600 text-white shadow">Kanban Lanes</button>
+                            <button id="btn-mode-graph" class="px-3 py-1.5 rounded-md text-xs font-bold text-gray-700 hover:bg-gray-300">Topology Graph</button>
+                        </div>
+                        <div id="architect-controls" class="hidden">
+                            <button id="btn-open-blueprint-modal" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow transition">+ Add Component from Asset</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KANBAN LANES -->
+                <div id="blueprint-lanes-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div class="bg-red-50/70 border border-red-200 rounded-xl p-3 flex flex-col">
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="font-bold text-[11px] uppercase tracking-wider text-red-800">Core Banking</h4>
+                            <span class="text-[9px] bg-red-200 text-red-900 px-1.5 py-0.5 rounded font-black">Restricted</span>
+                        </div>
+                        <div id="lane-CORE_BANKING" class="blueprint-lane flex-1 space-y-2 min-h-[350px] bg-white/60 p-2 rounded-lg border border-dashed border-red-300" data-type="CORE_BANKING"></div>
+                    </div>
+
+                    <div class="bg-purple-50/70 border border-purple-200 rounded-xl p-3 flex flex-col">
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="font-bold text-[11px] uppercase tracking-wider text-purple-800">Middleware</h4>
+                            <span class="text-[9px] bg-purple-200 text-purple-900 px-1.5 py-0.5 rounded font-black">Gateway</span>
+                        </div>
+                        <div id="lane-MIDDLEWARE" class="blueprint-lane flex-1 space-y-2 min-h-[350px] bg-white/60 p-2 rounded-lg border border-dashed border-purple-300" data-type="MIDDLEWARE"></div>
+                    </div>
+
+                    <div class="bg-blue-50/70 border border-blue-200 rounded-xl p-3 flex flex-col">
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="font-bold text-[11px] uppercase tracking-wider text-blue-800">Internal Apps</h4>
+                            <span class="text-[9px] bg-blue-200 text-blue-900 px-1.5 py-0.5 rounded font-black">LAN/VPN</span>
+                        </div>
+                        <div id="lane-INTERNAL_APP" class="blueprint-lane flex-1 space-y-2 min-h-[350px] bg-white/60 p-2 rounded-lg border border-dashed border-blue-300" data-type="INTERNAL_APP"></div>
+                    </div>
+
+                    <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-3 flex flex-col">
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="font-bold text-[11px] uppercase tracking-wider text-amber-800">Public Apps</h4>
+                            <span class="text-[9px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-black">Internet</span>
+                        </div>
+                        <div id="lane-PUBLIC_APP" class="blueprint-lane flex-1 space-y-2 min-h-[350px] bg-white/60 p-2 rounded-lg border border-dashed border-amber-300" data-type="PUBLIC_APP"></div>
+                    </div>
+
+                    <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3 flex flex-col">
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="font-bold text-[11px] uppercase tracking-wider text-emerald-800">Datawarehouse</h4>
+                            <span class="text-[9px] bg-emerald-200 text-emerald-900 px-1.5 py-0.5 rounded font-black">Clone DB</span>
+                        </div>
+                        <div id="lane-DATAWAREHOUSE" class="blueprint-lane flex-1 space-y-2 min-h-[350px] bg-white/60 p-2 rounded-lg border border-dashed border-emerald-300" data-type="DATAWAREHOUSE"></div>
+                    </div>
+                </div>
+
+                <!-- GRAPH DIAGRAM VIEW -->
+                <div id="blueprint-graph-container" class="hidden bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                    <div class="flex justify-between items-center mb-4 border-b pb-3">
+                        <div>
+                            <h4 class="font-bold text-sm text-gray-800">Live Enterprise Topology Flowchart</h4>
+                            <p class="text-xs text-gray-500">Auto-generated diagram mapping data flows through Middleware to Core Banking.</p>
+                        </div>
+                        <button id="btn-refresh-graph" class="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded font-semibold border">🔄 Refresh Diagram</button>
+                    </div>
+                    <div id="mermaid-target" class="flex justify-center overflow-x-auto min-h-[350px] p-4 bg-gray-50/50 rounded-lg border border-dashed"></div>
+                </div>
+            </section>
+
+            <!-- ASSET MANAGEMENT VIEW -->
+            <section id="view-assets" class="hidden space-y-6">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h3 class="text-base font-bold text-gray-800">Application Asset Registry</h3>
+                            <p class="text-xs text-gray-500">Click any application row to inspect its full topology, tech stack, and lifecycle history.</p>
+                        </div>
+                        <div id="architect-asset-controls" class="hidden">
+                            <button id="btn-open-register-asset-modal" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow transition">+ Register New Asset</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse cursor-pointer">
+                            <thead>
+                            <tr class="border-b bg-gray-50 text-gray-500 text-xs font-semibold uppercase">
+                                <th class="p-3">App Name</th>
+                                <th class="p-3">Owner</th>
+                                <th class="p-3">Servers</th>
+                                <th class="p-3">Primary Tech</th>
+                                <th class="p-3">Status</th>
+                            </tr>
+                            </thead>
+                            <tbody id="asset-table-body" class="text-sm divide-y divide-gray-100">
+                            <tr><td colspan="5" class="p-3 text-center text-gray-400">Loading asset inventory...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+</div>
+
+<!-- APPLICATION DETAIL MODAL (WITH TABBED TOPOLOGY DIAGRAMS) -->
+<div id="app-detail-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl max-w-4xl w-full p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-start border-b pb-4 mb-6">
+            <div>
+                <span id="detail-status-badge" class="px-2.5 py-1 text-xs rounded-full font-bold bg-green-100 text-green-800">ACTIVE</span>
+                <h3 id="detail-app-name" class="text-2xl font-black text-gray-900 mt-1">Application Name</h3>
+                <p class="text-xs text-gray-500">Owner: <strong id="detail-owner" class="text-gray-700">Team</strong> | Servers: <strong id="detail-servers" class="text-gray-700 font-mono">srv-01</strong></p>
+            </div>
+            <button id="btn-close-detail-modal" class="text-gray-400 hover:text-gray-600 font-bold text-lg">✕</button>
+        </div>
+
+        <div class="space-y-6 text-sm">
+
+            <!-- TOPOLOGY SECTION WITH TABS -->
+            <div class="bg-indigo-50/50 border border-indigo-100 rounded-xl p-5">
+                <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+                    <h4 class="font-bold text-indigo-900 text-sm flex items-center space-x-2">
+                        <span>🗺️</span> <span>Application Topology Visualizer</span>
+                    </h4>
+
+                    <!-- Topology Level Tabs -->
+                    <div class="flex bg-gray-200/80 p-1 rounded-lg space-x-1">
+                        <button id="btn-detail-tab-l0" class="px-4 py-2 rounded-lg text-xs font-bold bg-indigo-600 text-white shadow">Level 0 (Main Blueprint)</button>
+                        <button id="btn-detail-tab-l1" class="px-4 py-2 rounded-lg text-xs font-bold bg-gray-100 text-gray-700 hover:bg-gray-200">Level 1 (Internal Stack)</button>
+                    </div>
+                </div>
+
+                <!-- Single Active Tab Container -->
+                <div class="bg-white p-4 rounded-xl border border-indigo-100 min-h-[220px] flex flex-col justify-between">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-bold uppercase tracking-wider text-indigo-600">Dynamic Topology Diagram</span>
+                        <span id="detail-topo-l0-badge" class="text-[10px] bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded font-bold">-</span>
+                    </div>
+                    <div id="mermaid-modal-container" class="bg-gray-50 p-4 rounded-lg border border-dashed flex justify-center items-center min-h-[180px] overflow-x-auto">
+                        <span class="text-xs text-gray-400">Loading Topology Diagram...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <h4 class="font-bold text-gray-800 text-sm mb-3 flex items-center space-x-2">
+                    <span>⚙️</span> <span>Technology Information</span>
+                </h4>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                    <div class="bg-white p-3 rounded-lg border">
+                        <span class="text-gray-400 font-bold uppercase tracking-wider block text-[10px]">Source Code</span>
+                        <p id="detail-source-code" class="font-bold text-gray-800 mt-1">-</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg border">
+                        <span class="text-gray-400 font-bold uppercase tracking-wider block text-[10px]">Language / Version</span>
+                        <p id="detail-lang" class="font-bold text-gray-800 mt-1">-</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg border">
+                        <span class="text-gray-400 font-bold uppercase tracking-wider block text-[10px]">OS Version</span>
+                        <p id="detail-os" class="font-bold text-gray-800 mt-1">-</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg border">
+                        <span class="text-gray-400 font-bold uppercase tracking-wider block text-[10px]">CI/CD Pipeline</span>
+                        <p id="detail-cicd" class="font-bold text-gray-800 mt-1">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-amber-50/50 border border-amber-100 rounded-xl p-4">
+                <h4 class="font-bold text-amber-900 text-sm mb-3 flex items-center space-x-2">
+                    <span>📅</span> <span>Application Lifecycle & History</span>
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs mb-3">
+                    <div class="bg-white p-3 rounded-lg border border-amber-100">
+                        <span class="text-gray-400 font-bold uppercase tracking-wider block text-[10px]">First Release</span>
+                        <p id="detail-first-release" class="font-semibold text-gray-800 mt-1">-</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg border border-amber-100">
+                        <span class="text-gray-400 font-bold uppercase tracking-wider block text-[10px]">Sunset Date</span>
+                        <p id="detail-sunset" class="font-semibold text-gray-800 mt-1">-</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg border border-amber-100">
+                        <span class="text-gray-400 font-bold uppercase tracking-wider block text-[10px]">Lifecycle Status</span>
+                        <p class="font-semibold text-green-700 mt-1">Operational</p>
+                    </div>
+                </div>
+                <div class="bg-white p-3 rounded-lg border border-amber-100 text-xs">
+                    <span class="text-gray-400 font-bold uppercase tracking-wider block text-[10px] mb-1">Change History & Version Notes</span>
+                    <p id="detail-change-history" class="text-gray-700">-</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 flex justify-end">
+            <button id="btn-close-detail-modal-footer" class="px-5 py-2 bg-gray-800 hover:bg-gray-900 text-white rounded-lg text-xs font-semibold shadow">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- BLUEPRINT COMPONENT MODAL -->
+<div id="component-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">Add Architecture Component</h3>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1">Select Registered Application Asset</label>
+                <select id="modal-asset-select" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <option value="">-- Choose Application Asset --</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1">Component Type (Blueprint Lane)</label>
+                <select id="modal-type" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <option value="CORE_BANKING">CORE_BANKING</option>
+                    <option value="MIDDLEWARE">MIDDLEWARE</option>
+                    <option value="INTERNAL_APP">INTERNAL_APP</option>
+                    <option value="PUBLIC_APP">PUBLIC_APP</option>
+                    <option value="DATAWAREHOUSE">DATAWAREHOUSE</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1">Network Access Protocol</label>
+                <input type="text" id="modal-network" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="Restricted, LAN, VPN IPSec, Internet">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1">Description</label>
+                <textarea id="modal-desc" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" rows="2" placeholder="Summary..."></textarea>
+            </div>
+        </div>
+        <div class="mt-6 flex justify-end space-x-3">
+            <button id="btn-close-blueprint-modal" class="px-4 py-2 border rounded-lg text-xs text-gray-600 hover:bg-gray-100 font-semibold">Cancel</button>
+            <button id="btn-save-blueprint-component" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow">Save Component</button>
+        </div>
+    </div>
+</div>
+
+<!-- REGISTER NEW ASSET MODAL -->
+<div id="register-asset-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center border-b pb-4 mb-6">
+            <h3 class="text-xl font-black text-gray-900">Register New Application Asset</h3>
+            <button id="btn-close-register-asset-modal" class="text-gray-400 hover:text-gray-600 font-bold text-lg">✕</button>
+        </div>
+
+        <form id="register-asset-form" class="space-y-4 text-xs">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-bold text-gray-600 mb-1">Application Name *</label>
+                    <input type="text" id="reg-name" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="e.g. Risk Analytics Engine">
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-600 mb-1">Owner / Team *</label>
+                    <input type="text" id="reg-owner" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="e.g. Risk Management Team">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-bold text-gray-600 mb-1">Server Node(s)</label>
+                    <input type="text" id="reg-servers" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono" placeholder="srv-risk-01">
+                </div>
+                <div>
+                    <label class="block font-bold text-gray-600 mb-1">Status</label>
+                    <select id="reg-status" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <option value="ACTIVE">ACTIVE</option>
+                        <option value="MAINTENANCE">MAINTENANCE</option>
+                        <option value="SUNSET">SUNSET</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="border-t pt-4">
+                <h4 class="font-bold text-indigo-900 text-sm mb-2">Topology Information</h4>
+                <div class="grid grid-cols-2 gap-4 mb-3">
+                    <div>
+                        <label class="block font-bold text-indigo-900 mb-1">Level 0 Position Relative to Main Blueprint *</label>
+                        <select id="reg-topo-l0" required class="w-full border border-indigo-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none font-semibold">
+                            <option value="">-- Select Mandatory Position --</option>
+                            <option value="CORE_BANKING">CORE_BANKING (Restricted Zone)</option>
+                            <option value="MIDDLEWARE">MIDDLEWARE (Gateway Zone)</option>
+                            <option value="INTERNAL_APP">INTERNAL_APP (LAN / VPN)</option>
+                            <option value="PUBLIC_APP">PUBLIC_APP (Internet Facing)</option>
+                            <option value="DATAWAREHOUSE">DATAWAREHOUSE (Clone DB)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-gray-600 mb-1">Interconnections & Application Directives</label>
+                        <input type="text" id="reg-interconn" class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none" placeholder="e.g. ESB Gateway -> Core Ledger System">
+                        <span class="text-[10px] text-gray-400 mt-1 block">Format: Direct target or 'Source -> Destination' arrow syntax.</span>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div><label class="block text-[10px] font-bold text-gray-500">Level 1 Web Tier</label><input type="text" id="reg-l1-web" class="w-full border rounded px-2 py-1" placeholder="React / Nginx"></div>
+                    <div><label class="block text-[10px] font-bold text-gray-500">Level 1 Backend</label><input type="text" id="reg-l1-back" class="w-full border rounded px-2 py-1" placeholder="Java 25 Quarkus"></div>
+                    <div><label class="block text-[10px] font-bold text-gray-500">Level 1 Database</label><input type="text" id="reg-l1-db" class="w-full border rounded px-2 py-1" placeholder="PostgreSQL 17"></div>
+                </div>
+            </div>
+
+            <div class="border-t pt-4">
+                <h4 class="font-bold text-gray-800 text-sm mb-2">Technology Stack</h4>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div><label class="block text-[10px] font-bold text-gray-500">Programming Language</label><input type="text" id="reg-lang" class="w-full border rounded px-2 py-1" placeholder="Java 25"></div>
+                    <div><label class="block text-[10px] font-bold text-gray-500">OS Version</label><input type="text" id="reg-os" class="w-full border rounded px-2 py-1" placeholder="Ubuntu 22.04"></div>
+                    <div class="flex items-center space-x-2 pt-4"><input type="checkbox" id="reg-source-code" checked class="rounded"> <label class="font-bold text-gray-600">Source Code (GitLab)</label></div>
+                    <div class="flex items-center space-x-2 pt-4"><input type="checkbox" id="reg-cicd" checked class="rounded"> <label class="font-bold text-gray-600">CI/CD Pipeline</label></div>
+                </div>
+            </div>
+
+            <div class="border-t pt-4">
+                <h4 class="font-bold text-amber-900 text-sm mb-2">Lifecycle & History</h4>
+                <div class="grid grid-cols-2 gap-4 mb-2">
+                    <div><label class="block font-bold text-gray-600 mb-1">First Release Date</label><input type="date" id="reg-first-release" class="w-full border rounded px-2 py-1"></div>
+                    <div><label class="block font-bold text-gray-600 mb-1">Sunset Date (Optional)</label><input type="date" id="reg-sunset" class="w-full border rounded px-2 py-1"></div>
+                </div>
+                <div><label class="block font-bold text-gray-600 mb-1">Change History / Notes</label><textarea id="reg-change-history" rows="2" class="w-full border rounded px-2 py-1" placeholder="Initial release notes..."></textarea></div>
+            </div>
+
+            <div class="mt-6 flex justify-end space-x-3 pt-4 border-t">
+                <button type="button" id="btn-cancel-register-asset" class="px-4 py-2 border rounded-lg text-xs text-gray-600 hover:bg-gray-100 font-semibold">Cancel</button>
+                <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow">Register Asset</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Entrypoint ES Module Script -->
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
